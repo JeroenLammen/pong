@@ -1,0 +1,86 @@
+<canvas id="pongCanvas"></canvas>
+
+<script>
+
+    // RequestAnimFrame: a browser API for getting smooth animations
+    window.requestAnimFrame = (function(){
+        return  window.requestAnimationFrame       ||
+                window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame    ||
+                window.oRequestAnimationFrame      ||
+                window.msRequestAnimationFrame     ||
+                function( callback ){
+                    return window.setTimeout(callback, 1000 / 60);
+                };
+    })();
+
+    window.cancelRequestAnimFrame = ( function() {
+        return window.cancelAnimationFrame          ||
+                window.webkitCancelRequestAnimationFrame    ||
+                window.mozCancelRequestAnimationFrame       ||
+                window.oCancelRequestAnimationFrame     ||
+                window.msCancelRequestAnimationFrame        ||
+                clearTimeout
+    } )();
+
+    var canvas = $("#pongCanvas")[0];
+    var ctx = canvas.getContext("2d");
+    var canvasWidth = 800;
+    var canvasHeight = 400;
+    ctx.canvas.width = canvasWidth;
+    ctx.canvas.height = canvasHeight;
+    ctx.fillStyle ="#000000";
+
+    var Paddles = [];
+
+    function Paddle(pos){
+        this.width = 5;
+        this.height = canvas.height/4;
+        this.x = (pos == "left") ? 0 : canvasWidth - this.width;
+        this.y = canvasHeight/2 - this.height/2;
+    };
+
+    var player1 = new Paddle("left");
+    var player2 = new Paddle("right");
+
+    Paddles.push(player1);
+    Paddles.push(player2);
+
+    function animloop() {
+        init = requestAnimFrame(animloop);
+        draw();
+    }
+
+    function draw() {
+        for (var p = 0; p < Paddles.length; p++) {
+            ctx.fillStyle = "black";
+            ctx.fillRect(Paddles[p].x, Paddles[p].y, Paddles[p].width, Paddles[p].height);
+        }
+    }
+
+    function update(){
+        paintCanvas();
+        draw();
+    }
+
+    function paintCanvas() {
+        ctx.fillStyle = "lightgrey";
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    }
+
+    console.log(canvas);
+
+    var socket = io();
+    socket.on("movePaddle", function(motionData) {
+        console.log("move bitch!");
+        Paddles[0].y = map(motionData.beta, 0,90,0,400);
+        update();
+    });
+
+    function map( x,  in_min,  in_max,  out_min,  out_max){
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
+   // animloop();
+        draw();
+</script>

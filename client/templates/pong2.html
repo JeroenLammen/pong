@@ -1,0 +1,404 @@
+<div id="gamediv">
+    <div id="titleScreen">
+        <h1>Pong!</h1>
+        <p>This game is based on the HTML5 elements <b>canvas</b> and <b>audio</b>. With some simple javascript to make it work.</p>
+        <p>To play this game you need a modern web browser with support for HTML5. Audio only works with Firefox 3.5+ at the moment.</p>
+        <p class="vcard">Made by <a href="http://daverix.net/" class="url fn" target="_top" rel="me">David Laurell</a></p>
+        <button id="playButton">Play!</button>
+    </div>
+    <div id="playScreen">
+        <canvas width="640" height="360" id="gameCanvas">
+            <p>Your browser <b>does not</b> support HTML5!</p>
+            <p>Download <a href="http://firefox.com">Firefox3.6</a> for the full experience or another with good HTML5 support. The game is tested in Firefox 3.0+, Chromium 4+, Chrome 4 beta, Opera and Internet Explorer 8. To get the audio to work you are required to use Firefox for the moment.</p>
+            <p>Visit the <a href="http://daverix.net/projects/pong/">project page</a> for more info.</p>
+        </canvas>
+        <div id="computerScore">0</div>
+        <div id="playerScore">0</div>
+        <div class="ingamebuttons">
+            <button id="pauseButton">Pause</button>
+            <button id="soundButton">Turn off sound</button>
+        </div>
+        <div id="pauseText">Paused</div>
+    </div>
+</div>
+</div>
+<style>
+    /*
+ * Styles for the Pong game
+ * Author: David Laurell <david.laurell@gmail.com>
+ * License: GPLv3
+ */
+
+    @CHARSET "UTF-8";
+
+    #gamediv {
+        display: block;
+        margin: 10px auto;
+        width: 640px;
+        height: 360px;
+        background: #150000;
+        padding: 10px;
+    }
+
+    /*
+        Title screen
+    */
+    #titleScreen {
+        border: 2px solid #333;
+        padding: 1em;
+        margin: 0 auto;
+        margin-top: 3em;
+        width: 50%;
+        text-align: center;
+    }
+    #titleScreen h1 {
+        font-weight: normal;
+        color: #ffc;
+        font-size: 1.5em;
+    }
+    #titleScreen p {
+        font-weight: bold;
+        font-size: 0.8em;
+        color: #ccc;
+        text-align: left;
+    }
+
+    #titleScreen .vcard {
+        font-size: 0.8em;
+    }
+    #titleScreen .vcard a {
+        color: #ccc;
+    }
+
+    /*
+        Play screen
+    */
+    #playScreen {
+        display: none;
+    }
+
+    #playScreen .ingamebuttons {
+        float: left;
+        position: relative;
+        top: -2.5em;
+        left: 0;
+        text-align: center;
+    }
+
+    #gameCanvas {
+        position: relative;
+        top: 0;
+        left: 0;
+        color: #ccc;
+    }
+    #computerScore,
+    #playerScore {
+        position: relative;
+        top: -340px;
+        left: 0;
+        font-size: 3em;
+        color: #ccc;
+        line-height: 0;
+        width: 40%;
+        opacity:0.8;filter:alpha(opacity=80);
+    }
+
+    #computerScore {
+        float: left;
+        text-align: right;
+    }
+    #playerScore {
+        float: right;
+        text-align: left;
+    }
+
+    #pauseText {
+        display: none;
+        position: relative;
+        top: -360px;
+        left: 0;
+        font-size: 3em;
+        margin: 3em auto;
+        opacity:0.4;filter:alpha(opacity=40);
+        color: #ffc;
+        text-align: center;
+        line-height: 0;
+    }
+
+    /*
+        Buttons
+    */
+    #playButton,
+    #pauseButton,
+    #soundButton {
+        border: 2px solid #333;
+        background: #111;
+        color: #ffc;
+        padding: 0.3em 2em;
+        font-size: 0.8em;
+        opacity:0.4;filter:alpha(opacity=40);
+    }
+    #pauseButton,
+    #soundButton {
+        float: left;
+        margin-left: 1em;
+    }
+    #pauseButton:hover,
+    #soundButton:hover,
+    #playButton:hover {
+        background: #444;
+        color: #afa;
+    }
+
+</style>
+<script>
+    /*
+     Pong implemented with HTML features.
+
+     Version: 1.1
+     Author: David Laurell <david@laurell.nu>
+     License: GPLv3
+
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
+
+     You should have received a copy of the GNU General Public License
+     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+     */
+
+    var game, canvas, ctx, soundLeft, soundRight, soundWall, gameTimeLast;
+
+    function init() {
+        canvas = document.getElementById("gameCanvas");
+        ctx = canvas.getContext("2d");
+        soundLeft = document.getElementById("bounceLeft");
+        soundRight = document.getElementById("bounceRight");
+        soundWall = document.getElementById("bounceWall");
+
+        game = {
+            player : {
+                y : canvas.height / 2,
+                score : 0
+            },
+            computer : {
+                y : canvas.height / 2,
+                score : 0,
+                speed: 2
+            },
+            ball : {
+                x : canvas.width / 2,
+                y : canvas.height / 2,
+                vx : Math.round(Math.random()) ? 1 : -1,
+                vy : Math.random() * 4 - 2,
+                bounces : 0,
+                radius : 3,
+                reset: function() {
+                    this.x = canvas.width / 2;
+                    this.y = canvas.height / 2;
+                    this.vy = Math.random() * 4 - 2;
+                },
+                multiplier: .2,
+                maxspeed: 5
+            },
+            playerHeight : 80,
+            playerWidth : 4,
+            pause : false,
+            sound: true
+        };
+
+        document.onmousemove = moveMouse;
+
+        gameTimeLast = new Date();
+        update();
+    }
+
+    function moveMouse(e) {
+        var y;
+        if(!e) {
+            e = window.event;
+            y = e.event.offsetY;
+        }
+        else {
+            y = e.pageY;
+        }
+
+        y -= canvas.offsetTop;
+        if(y - game.playerHeight/2 >= 0 && y + game.playerHeight/2 <= canvas.height)
+            game.player.y = y;
+    }
+
+    function playSound(snd) {
+        if(game.sound) {
+            try {
+                if (!snd.paused) {
+                    // Pause and reset it
+                    snd.pause();
+                    snd.currentTime = 0;
+                }
+                snd.play();
+            }
+            catch(e) {}
+        }
+    }
+
+    function update() {
+        dateTime = new Date();
+
+        gameTime = (dateTime - gameTimeLast);
+        if(gameTime < 0)
+            gameTime = 0;
+
+        moveAmount = gameTime > 0 ? gameTime / 10 : 1;
+
+        if (!game.pause) {
+            /* Move cpu player */
+            if(game.computer.y + 20 < game.ball.y && game.computer.y + game.playerHeight/2 <= canvas.height)
+                game.computer.y += game.computer.speed * moveAmount;
+            else if(game.computer.y - 20 > game.ball.y && game.computer.y - game.playerHeight/2 >= 0)
+                game.computer.y -= game.computer.speed * moveAmount;
+
+            /* Change direction of ball when hitting a wall */
+            if (game.ball.y + game.ball.radius > canvas.height
+                    || game.ball.y - game.ball.radius < 0) {
+                playSound(soundWall);
+                if(game.ball.y <= game.ball.radius)
+                    game.ball.y = game.ball.radius;
+                else
+                    game.ball.y = canvas.height - game.ball.radius;
+
+                game.ball.vy *= -1;
+            }
+
+            /* checking collision between ball and player */
+            if (game.ball.x + game.ball.radius >= canvas.width - game.playerWidth) {
+                if (game.ball.y + game.ball.radius >= game.player.y	- game.playerHeight / 2
+                        && game.ball.y + game.ball.radius <= game.player.y	+ game.playerHeight / 2) {
+                    playSound(soundRight);
+
+                    if(game.ball.vx <= game.ball.maxspeed) {
+                        game.ball.vx += game.ball.multiplier;
+                    }
+
+                    changeBallDirection(game.player);
+                } else {
+                    game.computer.score++;
+                    document.getElementById("computerScore").innerHTML = game.computer.score;
+                    game.ball.reset();
+                    game.ball.vx = -1;
+                }
+            }
+            /* checking collision between ball and cpu */
+            else if(game.ball.x - game.ball.radius <= game.playerWidth) {
+                if (game.ball.y + game.ball.radius >= game.computer.y - game.playerHeight / 2
+                        && game.ball.y + game.ball.radius <= game.computer.y + game.playerHeight / 2) {
+                    playSound(soundLeft);
+
+                    if(game.ball.vx >= -game.ball.maxspeed) {
+                        game.ball.vx -= game.ball.multiplier;
+                    }
+
+                    changeBallDirection(game.computer);
+                } else {
+                    game.player.score++;
+                    document.getElementById("playerScore").innerHTML = game.player.score;
+                    game.ball.reset();
+                    game.ball.vx = 1;
+                }
+            }
+            game.ball.x += game.ball.vx * moveAmount;
+            game.ball.y += game.ball.vy * moveAmount;
+        }
+
+        draw();
+
+        setTimeout(update,1000/30);
+
+        gameTimeLast = dateTime;
+    }
+
+    function changeBallDirection(player) {
+        if(player.y > game.ball.y)
+            game.ball.vy -= (player.y - game.ball.y) / game.playerHeight * game.ball.maxspeed;
+        else if(player.y < game.ball.y)
+            game.ball.vy += (game.ball.y - player.y) / game.playerHeight * game.ball.maxspeed;
+
+        game.ball.vx *= -1;
+    }
+    /**
+     * Draw everything in the canvas
+     */
+    function draw() {
+        if (!game.pause) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            /*
+             var bgFade = ctx.createLinearGradient(0,0,0,canvas.height);
+             bgFade.addColorStop(0, '#000');
+             bgFade.addColorStop(1, '#211');
+             ctx.fillStyle = bgFade;
+             ctx.fillRect(0, 0, canvas.width, canvas.height);
+             */
+
+            ctx.fillStyle = "rgb(64,64,64)";
+            var size = 3;
+            for(var y=0;y<canvas.height;y+=size*3) {
+                ctx.fillRect(canvas.width / 2 - size/2, y, size, size);
+            }
+
+            // left player
+            ctx.fillStyle = "rgba(128,128,128,.8)";
+            ctx.fillRect(0, game.computer.y - game.playerHeight / 2,
+                    game.playerWidth, game.playerHeight);
+            // right player
+            ctx.fillRect(canvas.width - game.playerWidth, game.player.y
+                    - game.playerHeight / 2, game.playerWidth, game.playerHeight);
+
+            ctx.fillStyle = "rgba(192,192,192,8)";
+            ctx.fillRect(game.ball.x - game.ball.radius, game.ball.y
+                    - game.ball.radius, game.ball.radius * 2, game.ball.radius * 2);
+        }
+    }
+
+    function intro() {
+        var playButton = document.getElementById('playButton');
+        playButton.onclick = function() {
+            document.getElementById('titleScreen').style.display = "none";
+            document.getElementById('playScreen').style.display = "block";
+            init();
+        }
+
+        var pauseButton = document.getElementById('pauseButton');
+        pauseButton.onclick = function() {
+            if (!game.pause) {
+                game.pause = true;
+                this.innerHTML = "Continue";
+                document.getElementById('pauseText').style.display = "block";
+            }
+            else {
+                game.pause = false;
+                this.innerHTML = "Pause";
+                document.getElementById('pauseText').style.display = "none";
+            }
+        }
+
+        var soundButton = document.getElementById('soundButton');
+        soundButton.onclick = function() {
+            if (!game.sound) {
+                game.sound = true;
+                this.innerHTML = "Turn off sound";
+            }
+            else {
+                game.sound = false;
+                this.innerHTML = "Turn on sound";
+            }
+        }
+    }
+
+    intro();
+</script>

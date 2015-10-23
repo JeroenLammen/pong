@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" ng-app = "PongApp">
+<base href="/">
+<head>
+    <!-- libraries -->
+    <script type="text/javascript" src="libraries/jquery-1.11.3.js"></script>
+    <script type="text/javascript" src="libraries/angular.js"></script>
+    <script type="text/javascript" src="libraries/angular-route.js"></script>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+
+    <!-- javascript files -->
+    <script type="text/javascript" src="js/gyro.js"></script>
+    <script type="text/javascript" src="js/angular.js"></script>
+    <script type="text/javascript" src="js/services.js"></script>
+
+    <!-- css files -->
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+
+    <meta charset="UTF-8">
+    <title>Pong</title>
+</head>
+<body>
+<div id="content">
+    <ng-view></ng-view>
+</div>
+<a></a>
+</body>
+</html>
