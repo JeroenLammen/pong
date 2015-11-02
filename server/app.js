@@ -18,9 +18,47 @@ app.use(bodyParser.json());
 //});
 
 io.on("connection",function(socket){
-    console.log("socket connection started");
+
+    var playerCount, rooms, noRoom;
+
+    socket.on("disconnect", function() {
+        console.log("device disconnected");
+    });
+
    socket.on("newDevice",function(data){
+       console.log("----------------------------------")
        console.log("new Device connected");
+       playerCount = io.sockets.sockets.length;
+       console.log(playerCount);
+       rooms = io.sockets.adapter.rooms;
+       console.log(rooms);
+       console.log("number of rooms: " + rooms.length);
+       for(var i=0; i<rooms.length; i++){
+           console.log("for statement");
+           if(Object.keys(rooms["room" + i]).length == 1) {
+               console.log("if statement");
+               socket.join("room" + i);
+               noRoom = false;
+               break;
+           } else {
+               console.log("else statement");
+               if(i == rooms.length-1) {
+                   noRoom = true;
+               }
+           }
+       }
+       if(noRoom){
+           console.log('no room');
+           socket.join("room" + Math.ceil(playerCount/2));
+       }
+
+
+
+
+       //socket.join("pongRoom");
+       //var room = io.sockets.adapter.rooms['pongRoom'];
+       //console.log(Object.keys(room).length);
+
        console.log(data);
        socket.broadcast.emit("deviceAdded", data);
    });

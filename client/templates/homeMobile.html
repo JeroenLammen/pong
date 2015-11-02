@@ -1,19 +1,8 @@
-<div ng-include="'/templates/pong.html'"></div>
-
-<div ng-model="mobile">
-    <div ng-switch on="mobile">
-        <div ng-switch-when=true>
-            <h1>mobile lalala</h1>
-        </div>
-        <div ng-switch-when=false>
-            <h1>laptop lalala</h1>
-        </div>
-    </div>
-</div>
-
+<h1>Mobile template!</h1>
 <p>This Example just print's the raw accelerometer and gyro data. Will return null if no device information is found.</p>
 <p>gyro.getFeatures: <span id="features"></span></p>
 <span id="example"></span>
+
 <script src="../js/gyro.js"></script>
 <script>
     var oldBeta, newBeta;
@@ -42,9 +31,6 @@
         oldBeta = motionData.beta;
 
 
-       // console.log(motionData);
+        // console.log(motionData);
     });
 </script>
-
-<div id="devices"></div>
-
