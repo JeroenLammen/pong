@@ -1,6 +1,37 @@
 <canvas id="pongCanvas"></canvas>
 
+<style>
+    @media(max-width:1150px) {
+        #pongCanvas {
+            width: 700px;
+            height: 350px;
+        }
+    }
+</style>
+
 <script>
+    var tooSmall = false;
+    var canvasObject = $("#pongCanvas");
+
+    $(window).resize(function() {
+        var windowWidth = $(window).width();
+        console.log(windowWidth);
+       // var windowHeight = $(window).height();
+        if(windowWidth < 720) {
+            if(tooSmall == false) {
+                $("#pongCanvas").hide();
+                setTimeout(function() {
+                    swal("Your window is too small!");
+                },1000);
+                tooSmall = true;
+            }
+        }
+        else {
+            tooSmall = false;
+            $("#pongCanvas").show();
+        }
+    });
+
 
     // RequestAnimFrame: a browser API for getting smooth animations
     window.requestAnimFrame = (function(){
@@ -23,34 +54,44 @@
                 clearTimeout
     } )();
 
-    var canvas = $("#pongCanvas")[0];
-    var ctx = canvas.getContext("2d");
-    var canvasWidth = 800;
-    var canvasHeight = 400;
+    var canvas = $("#pongCanvas")[0],
+        ctx = canvas.getContext("2d"),
+        canvasWidth = Math.round($(window).width() * 0.8),
+        canvasHeight = canvasWidth * 0.4,
+        Paddles = [],
+        paddle1,
+        paddle2,
+        ball,
+        p1,
+        p2,
+        bounce = 1,
+        over = 0,
+        playerCount = 0,
+        pointsP1 = 0,
+        pointsP2 = 0,
+        winPoints = 4;
+//    $("#pongCanvas").css("left", "10%");
     ctx.canvas.width = canvasWidth;
     ctx.canvas.height = canvasHeight;
     ctx.fillStyle ="#000000";
-    var bounce = 1;
     canvas.addEventListener("mousedown", btnClick, true);
-
-    var Paddles = [];
 
     function Paddle(pos){
         this.width = 10;
-        this.height = canvas.height/4;
+        this.height = canvas.height/6;
         this.x = (pos == "left") ? 0 : canvasWidth - this.width;
         this.y = canvasHeight/2 - this.height/2;
         this.draw = function() {
             ctx.fillStyle = "white";
             ctx.fillRect(this.x, this.y, this.width, this.height);
         }
-    };
+    }
 
-    var player1 = new Paddle("left");
-    var player2 = new Paddle("right");
+    paddle1 = new Paddle("left");
+    paddle2 = new Paddle("right");
 
-    Paddles.push(player1);
-    Paddles.push(player2);
+    Paddles.push(paddle1);
+    Paddles.push(paddle2);
 
     function Ball() {
         this.c = "white";
@@ -67,20 +108,7 @@
         }
     }
 
-    var ball = new Ball();
-
-//    ball = {
-//        r: 5,
-//        x: canvasWidth / 2,
-//        y: canvasHeight / 2,
-//        vx: 4,
-//        vy: 8,
-//        draw: function() {
-//            ctx.fillStyle = "white";
-//            ctx.arc(this.x,this.y,this.r,0,2*Math.PI);
-//            ctx.fill();
-//        }
-//    };
+    ball = new Ball();
 
     startBtn = {
         w: 100,
@@ -90,7 +118,7 @@
 
         draw: function() {
             ctx.strokeStyle = "white";
-            ctx.lineWidth = "2";
+            ctx.lineWidth = 2;
             ctx.strokeRect(this.x, this.y, this.w, this.h);
 
             ctx.font = "18px Arial, sans-serif";
@@ -101,8 +129,29 @@
         }
     };
 
+    restartBtn = {
+        w: 100,
+        h: 50,
+        x: canvasWidth/2 - 50,
+        y: canvasHeight/2 - 50,
+
+        draw: function() {
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(this.x, this.y, this.w, this.h);
+
+            ctx.font = "18px Arial, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStlye = "white";
+            ctx.fillText("Restart", canvasWidth/2, canvasHeight/2 - 25 );
+        }
+    };
+
     function startScreen() {
-        draw();
+        for (var p = 0; p < Paddles.length; p++) {
+            Paddles[p].draw();
+        }
         startBtn.draw();
 
     }
@@ -130,60 +179,116 @@
         ball.x += ball.vx;
         ball.y += ball.vy;
         //console.log("bounce: " + bounce);
-        console.log("ball.vx = " + ball.vx + ", ball.vy = " + ball.vy);
+        //console.log("ball.vx = " + ball.vx + ", ball.vy = " + ball.vy);
 
         p1 = Paddles[0];
         p2 = Paddles[1];
 
-        if(collides(ball, p1)) {
-            bounce++;
-            collideWithPaddle(ball, p1);
+        if(collidesWithPaddle(ball, paddle1)) {
+            console.log("paddle 1");
+            paddleCollision(ball);
+        }
+
+        else if(collidesWithPaddle(ball, paddle2)) {
+            console.log("paddle 2");
+            paddleCollision(ball);
+        }
+
+        else if(collidesWithWall(ball) == "top"){
+            console.log("top wall");
+            wallCollision("top");
+        }
+
+        else if(collidesWithWall(ball) == "bottom"){
+            console.log("bottom wall");
+            wallCollision("bottom");
         }
 
 
-        else if(collides(ball, p2)) {
-            bounce++;
-            collideWithPaddle(ball, p2);
+        if(ball.x > canvasWidth) {
+            ball.x = canvasWidth;
+            roundFinished("player2");
         }
 
-        collideWithWall();
+        else if(ball.x < 0) {
+            ball.x = 0;
+            roundFinished("player1");
+        }
+
+
     }
 
-    function collides(b, p) {
-        if(b.y + ball.r >= p.y && b.y - ball.r <=p.y + p.height) {
-            if(b.x >= (p.x - p.width) && p.x > 0){
-                return true;
-            }
-
-            else if(b.x <= p.width && p.x == 0) {
-                return true;
-            }
-
-            else return false;
+    function collidesWithWall(ball) {
+        if(ball.y + ball.r > canvasHeight) {
+            return "bottom";
+        }
+        else if(ball.y -ball.r < 0) {
+            return "top";
         }
     }
 
-    function collideWithPaddle(ball, p) {
+    function collidesWithPaddle(ball, p) {
+
+//        var xd = ball.x - p.x;
+//        var yd = ball.y - p.y;
+//        var wt = ball.r + p.width;
+//        return (xd * xd + yd * yd <= wt * wt);
+
+//        var distX = Math.abs(ball.x - p.x-p.width/2);
+//        var distY = Math.abs(ball.y - p.y-p.height/2);
+//
+//        if (distX > (p.width/2 + ball.r)) { return false; }
+//        if (distY > (p.height/2 + ball.r)) { return false; }
+//
+//        if (distX <= (p.width/2)) { return true; }
+//        if (distY <= (p.height/2)) { return true; }
+//
+//        var dx=distX-p.width/2;
+//        var dy=distY-p.height/2;
+//        return (dx*dx+dy*dy<=(ball.r*ball.r));
+
+        var distX = Math.abs(ball.x - p.x-p.width/2);
+        var distY = Math.abs(ball.y - p.y-p.height/2);
+        var dx=distX-p.width/2;
+        var dy=distY-p.height/2;
+        if(dx*dx+dy*dy<=(ball.r*ball.r)){
+            console.log("corner collision");
+            ball.yx = -ball.yx;
+            ball.y = p.y - ball.r;
+        }
+        else {
+           if(ball.y >= p.y && ball.y <= p.y + p.height) {
+               if((ball.x + ball.r) >= p.x && p.x > 0){
+                   return true;
+               }
+
+               else if(ball.x - ball.r <= p.width && p.x == 0) {
+                   return true;
+               }
+
+               else return false;
+           }
+       }
+    }
+
+    function paddleCollision(ball) {
         bounce++;
         ball.vx = -ball.vx;
        // increaseSpd();
     }
 
-    function collideWithWall() {
-        // If ball strikes the vertical walls, invert the
-        // x-velocity vector of ball
-        if(ball.y + ball.r > canvasHeight) {
-            ball.vy = -ball.vy;
-            ball.y = canvasHeight - ball.r;
-            bounce++;
-        }
-
-        else if(ball.y -ball.r < 0) {
+    function wallCollision(wall) {
+        bounce++;
+        //console.log(wall);
+        if(wall == "top") {
             ball.vy = -ball.vy;
             ball.y = ball.r;
-            bounce++;
-        }
 
+        }
+        else if(wall == "bottom") {
+            ball.vy = -ball.vy;
+            ball.y = canvasHeight - ball.r;
+        }
 
        // increaseSpd();
     }
@@ -200,6 +305,7 @@
 
     function getMousePos(canvas, evt) {
         var rect = canvas.getBoundingClientRect();
+        console.log("getMousePos");
         return {
             x: evt.clientX - rect.left,
             y: evt.clientY - rect.top
@@ -213,16 +319,80 @@
 
         // Click start button
         if(pos.x >= startBtn.x && pos.x <= startBtn.x + startBtn.w && pos.y >= startBtn.y && pos.y <= startBtn.y + startBtn.h) {
-            startBtn = {};
-            animloop();
+            if(playerCount == 2) {
+                startBtn = {};
+                animloop();
+            } else {
+               // alert("not enough players!");
+                startBtn = {};
+                animloop();
+            }
         }
+    }
+
+    // Function to run when the game overs
+    function roundFinished(player) {
+        if(player == "player1") {
+            pointsP2++;
+            $("#player2 .score h2").text(pointsP2);
+        }
+        else {
+            pointsP1++;
+            $("#player1 .score h2").text(pointsP1);
+        }
+        if(pointsP1 == winPoints) {
+            console.log("player1 wins!");
+            resetGame();
+        }
+        else if(pointsP2 == winPoints) {
+            console.log("player2 wins!");
+            resetGame();
+        }
+        countdown = 3;
+        ctx.fillStlye = "white";
+        ctx.font = "20px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(countdown + "...", canvasWidth/2, canvasHeight/2 + 25 );
+        var interval = setInterval(function(){
+            countdown--;
+            paintCanvas();
+            paddle1.draw();
+            paddle2.draw();
+            ctx.fillStlye = "white";
+            ctx.font = "20px Arial, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(countdown + "...", canvasWidth/2, canvasHeight/2 + 25 );
+        },1000);
+
+        // Stop the Animation
+        cancelRequestAnimFrame(init);
+
+        // If the game is over, and the restart button is clicked
+            setTimeout(function(){
+                ball.x = canvasWidth/2;
+                ball.y = canvasHeight/2;
+                //points = 0;
+                ball.vx = 4;
+                ball.vy = 8;
+                animloop();
+                clearInterval(interval);
+            },3000);
+    }
+
+    function resetGame() {
+        pointsP1 = 0;
+        pointsP2 = 0;
+        $("#player1 .score h2").text(pointsP1);
+        $("#player2 .score h2").text(pointsP2);
+        startScreen();
     }
 
     var socket = io();
     socket.on("movePaddle", function(motionData) {
         console.log(motionData.beta);
         Paddles[0].y = map(motionData.beta, 0,90,0,canvasHeight-Paddles[0].height);
-        //animloop();
     });
 
     function map( x,  in_min,  in_max,  out_min,  out_max){

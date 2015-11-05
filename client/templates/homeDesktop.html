@@ -1,11 +1,18 @@
 <div id="playersInfo">
-    <div class="players" ng-model="player1">
-        {{player1}}
+    <div id="player1" ng-model="player1">
+        <h2>Player 1</h2>
+        <div class="score">
+            <h2>0</h2>
+        </div>
     </div>
-    <div class="players" ng-model="player2">
-        {{player2}}
+
+    <div id="player2" ng-model="player2">
+        <h2>Player 2</h2>
+        <div class="score">
+            <h2>0</h2>
+        </div>
     </div>
 </div>
 <div ng-include="'/templates/pong.html'"></div>
-<h1>Desktop template!</h1>
+<!--<h1>Desktop template!</h1>-->
 <div id="devices"></div>
