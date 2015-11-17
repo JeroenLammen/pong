@@ -1,34 +1,40 @@
 <!DOCTYPE html>
-<html lang="en" ng-app = "PongApp">
+<html lang="en" data-ng-app="PongApp">
 <base href="/">
 <head>
-    <!-- libraries -->
-    <script type="text/javascript" src="libraries/jquery-1.11.3.js"></script>
+    <meta name="viewport" content="width=device-width"/>
+    <!-- Javascript libraries -->
+    <!--<script type="text/javascript" src="libraries/jquery-1.11.3.js"></script>-->
+    <script src="http://code.jquery.com/jquery-1.8.3.js"> </script>
     <script type="text/javascript" src="libraries/angular.js"></script>
     <script type="text/javascript" src="libraries/angular-route.js"></script>
     <script type="text/javascript" src="/socket.io/socket.io.js"></script>
     <script type="text/javascript" src="libraries/sweetalert.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="css/sweetalert.css">
+    <script type="text/javascript" src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.js"></script>
 
-    <!-- javascript files -->
+    <!-- CSS libraries -->
+    <link rel="stylesheet" type="text/css" href="css/sweetalert.css">
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.css" />
+    <link href='https://fonts.googleapis.com/css?family=Fredericka+the+Great' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Press+Start+2P' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+
+    <!-- Javascript files -->
     <script type="text/javascript" src="js/gyro.js"></script>
     <script type="text/javascript" src="js/angular.js"></script>
     <script type="text/javascript" src="js/services.js"></script>
 
-    <!-- css files -->
+    <!-- CSS files -->
     <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" href="css/han-pong.min.css">
 
     <meta charset="UTF-8">
     <title>Pong</title>
 </head>
-<body ng-controller="mainController">
+<body id="container">
 <div id="wrapper">
-    <div id="header">
-        <h1>Pong!</h1>
-    </div>
     <ng-view></ng-view>
-    <h5>Gemaakt door Johan Schimmel & Jeroen Lammen</h5>
 </div>
-
 </body>
 </html>

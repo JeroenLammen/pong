@@ -1,4 +1,6 @@
 <canvas id="pongCanvas"></canvas>
+<!--<script src="../js/angular.js"></script>-->
+
 
 <style>
     @media(max-width:1150px) {
@@ -10,18 +12,24 @@
 </style>
 
 <script>
+    players = [];
     var tooSmall = false;
     var canvasObject = $("#pongCanvas");
 
     $(window).resize(function() {
         var windowWidth = $(window).width();
-        console.log(windowWidth);
-       // var windowHeight = $(window).height();
+        //console.log(windowWidth);
+        // var windowHeight = $(window).height();
         if(windowWidth < 720) {
             if(tooSmall == false) {
                 $("#pongCanvas").hide();
                 setTimeout(function() {
-                    swal("Your window is too small!");
+                    sweetAlert({
+                        title: 'Oops!',
+                        text: 'Your window is too small!',
+                        type: 'error',
+                        confirmButtonColor: '#696969'
+                    });
                 },1000);
                 tooSmall = true;
             }
@@ -31,7 +39,6 @@
             $("#pongCanvas").show();
         }
     });
-
 
     // RequestAnimFrame: a browser API for getting smooth animations
     window.requestAnimFrame = (function(){
@@ -55,22 +62,21 @@
     } )();
 
     var canvas = $("#pongCanvas")[0],
-        ctx = canvas.getContext("2d"),
-        canvasWidth = Math.round($(window).width() * 0.8),
-        canvasHeight = canvasWidth * 0.4,
-        Paddles = [],
-        paddle1,
-        paddle2,
-        ball,
-        p1,
-        p2,
-        bounce = 1,
-        over = 0,
-        playerCount = 0,
-        pointsP1 = 0,
-        pointsP2 = 0,
-        winPoints = 4;
-//    $("#pongCanvas").css("left", "10%");
+            ctx = canvas.getContext("2d"),
+            canvasWidth = Math.round($(window).width() * 0.8),
+            canvasHeight = canvasWidth * 0.4,
+            Paddles = [],
+            paddle1,
+            paddle2,
+            ball,
+            bounce = 1,
+            over = 0,
+            playerCount = 0,
+            pointsP1 = 0,
+            pointsP2 = 0,
+            winPoints = 10;
+    gameEnded = false;
+    //    $("#pongCanvas").css("left", "10%");
     ctx.canvas.width = canvasWidth;
     ctx.canvas.height = canvasHeight;
     ctx.fillStyle ="#000000";
@@ -98,8 +104,9 @@
         this.r = 5;
         this.x = canvasWidth / 2;
         this.y = canvasHeight / 2;
-        this.vx = 4;
-        this.vy = 8;
+        //get random number between 10 and 4, then multiply to -1 or 1 to go left or right
+        this.vx = (Math.floor(Math.random() * 6) + 4) * (Math.random() < 0.5 ? -1 : 1);
+        this.vy = (Math.floor(Math.random() * 10) + 4) * (Math.random() < 0.5 ? -1 : 1);
         this.draw = function() {
             ctx.beginPath();
             ctx.fillStyle = this.c;
@@ -118,13 +125,13 @@
 
         draw: function() {
             ctx.strokeStyle = "white";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 4;
             ctx.strokeRect(this.x, this.y, this.w, this.h);
 
             ctx.font = "18px Arial, sans-serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillStlye = "white";
+            ctx.fillStlye = "#000";
             ctx.fillText("Start", canvasWidth/2, canvasHeight/2 );
         }
     };
@@ -148,12 +155,32 @@
         }
     };
 
+    winBtn = {
+        w: 200,
+        h: 100,
+        x: canvasWidth / 2 - 100,
+        y: canvasHeight / 2 - 45,
+
+        draw: function (player) {
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(this.x, this.y, this.w, this.h);
+
+            ctx.font = "18px Arial, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStlye = "white";
+            ctx.fillText(player + " wins!", canvasWidth / 2, canvasHeight / 2);
+            ctx.fillText("Restart game", canvasWidth / 2, (canvasHeight / 2) + 20);
+        }
+    };
+
     function startScreen() {
+        paintCanvas();
         for (var p = 0; p < Paddles.length; p++) {
             Paddles[p].draw();
         }
         startBtn.draw();
-
     }
 
     function animloop() {
@@ -178,44 +205,46 @@
     function update() {
         ball.x += ball.vx;
         ball.y += ball.vy;
-        //console.log("bounce: " + bounce);
-        //console.log("ball.vx = " + ball.vx + ", ball.vy = " + ball.vy);
-
-        p1 = Paddles[0];
-        p2 = Paddles[1];
 
         if(collidesWithPaddle(ball, paddle1)) {
             console.log("paddle 1");
+            increaseSpeed();
             paddleCollision(ball);
         }
 
         else if(collidesWithPaddle(ball, paddle2)) {
             console.log("paddle 2");
+            increaseSpeed();
             paddleCollision(ball);
         }
 
         else if(collidesWithWall(ball) == "top"){
             console.log("top wall");
+            increaseSpeed();
             wallCollision("top");
         }
 
         else if(collidesWithWall(ball) == "bottom"){
             console.log("bottom wall");
+            increaseSpeed();
             wallCollision("bottom");
         }
 
 
         if(ball.x > canvasWidth) {
             ball.x = canvasWidth;
-            roundFinished("player2");
+               playerScores("Player 1");
+            //testing game without losing
+//            ball.vx = -ball.vx;
+//            ball.x = canvasWidth;
         }
 
         else if(ball.x < 0) {
             ball.x = 0;
-            roundFinished("player1");
+              playerScores("Player 2");
+//            ball.vx = -ball.vx;
+//            ball.x = 10;
         }
-
-
     }
 
     function collidesWithWall(ball) {
@@ -227,59 +256,37 @@
         }
     }
 
-    function collidesWithPaddle(ball, p) {
+    function collidesWithPaddle(ball, paddle) {
 
-//        var xd = ball.x - p.x;
-//        var yd = ball.y - p.y;
-//        var wt = ball.r + p.width;
-//        return (xd * xd + yd * yd <= wt * wt);
-
-//        var distX = Math.abs(ball.x - p.x-p.width/2);
-//        var distY = Math.abs(ball.y - p.y-p.height/2);
-//
-//        if (distX > (p.width/2 + ball.r)) { return false; }
-//        if (distY > (p.height/2 + ball.r)) { return false; }
-//
-//        if (distX <= (p.width/2)) { return true; }
-//        if (distY <= (p.height/2)) { return true; }
-//
-//        var dx=distX-p.width/2;
-//        var dy=distY-p.height/2;
-//        return (dx*dx+dy*dy<=(ball.r*ball.r));
-
-        var distX = Math.abs(ball.x - p.x-p.width/2);
-        var distY = Math.abs(ball.y - p.y-p.height/2);
-        var dx=distX-p.width/2;
-        var dy=distY-p.height/2;
+        var distX = Math.abs(ball.x - paddle.x-paddle.width/2);
+        var distY = Math.abs(ball.y - paddle.y-paddle.height/2);
+        var dx=distX-paddle.width/2;
+        var dy=distY-paddle.height/2;
         if(dx*dx+dy*dy<=(ball.r*ball.r)){
             console.log("corner collision");
             ball.yx = -ball.yx;
-            ball.y = p.y - ball.r;
+            ball.y = paddle.y - ball.r;
         }
         else {
-           if(ball.y >= p.y && ball.y <= p.y + p.height) {
-               if((ball.x + ball.r) >= p.x && p.x > 0){
-                   return true;
-               }
+            if(ball.y >= paddle.y && ball.y <= paddle.y + paddle.height) {
+                if((ball.x + ball.r) >= paddle.x && paddle.x > 0){
+                    return true;
+                }
 
-               else if(ball.x - ball.r <= p.width && p.x == 0) {
-                   return true;
-               }
+                else if(ball.x - ball.r <= paddle.width && paddle.x == 0) {
+                    return true;
+                }
 
-               else return false;
-           }
-       }
+                else return false;
+            }
+        }
     }
 
     function paddleCollision(ball) {
-        bounce++;
         ball.vx = -ball.vx;
-       // increaseSpd();
     }
 
     function wallCollision(wall) {
-        bounce++;
-        //console.log(wall);
         if(wall == "top") {
             ball.vy = -ball.vy;
             ball.y = ball.r;
@@ -289,71 +296,77 @@
             ball.vy = -ball.vy;
             ball.y = canvasHeight - ball.r;
         }
-
-       // increaseSpd();
     }
 
-    function increaseSpd() {
-        if(bounce % 10 == 0) {
-            bounce++;
-            if(Math.abs(ball.vx) < 15) {
-                ball.vx += (ball.vx < 0) ? -1 : 1;
-                ball.vy += (ball.vy < 0) ? -2 : 2;
-            }
+    function increaseSpeed() {
+        if(Math.abs(ball.vx) < 15) {
+            ball.vx += (ball.vx < 0) ? -0.1 : 0.1;
+            ball.vy += (ball.vy < 0) ? -0.1 : 0.1;
         }
+//        console.log("Y speed: " + ball.vy);
+//        console.log("X speed: " + ball.vx);
     }
 
     function getMousePos(canvas, evt) {
         var rect = canvas.getBoundingClientRect();
-        console.log("getMousePos");
         return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
+            x: (evt.clientX-rect.left)/(rect.right-rect.left)*canvas.width,
+            y: (evt.clientY-rect.top)/(rect.bottom-rect.top)*canvas.height
         };
     }
 
-    // On button click (Restart and start)
     function btnClick(e) {
 
-        var pos = getMousePos(canvas, e);
+        if (getPlayer1().name != null && getPlayer2().name != null) {
+            var pos = getMousePos(canvas, e);
 
-        // Click start button
-        if(pos.x >= startBtn.x && pos.x <= startBtn.x + startBtn.w && pos.y >= startBtn.y && pos.y <= startBtn.y + startBtn.h) {
-            if(playerCount == 2) {
-                startBtn = {};
-                animloop();
+            if(!gameEnded){
+                // Click start button
+                if(pos.x >= startBtn.x && pos.x <= startBtn.x + startBtn.w && pos.y >= startBtn.y && pos.y <= startBtn.y + startBtn.h) {
+                    if(playerCount == 2) {
+                        animloop();
+                    } else {
+                        // alert("not enough players!");
+                        animloop();
+                    }
+                }
             } else {
-               // alert("not enough players!");
-                startBtn = {};
-                animloop();
+                if(pos.x >= winBtn.x && pos.x <= winBtn.x + winBtn.w && pos.y >= winBtn.y && pos.y <= winBtn.y + winBtn.h) {
+                    resetGame();
+                }
             }
+        } else {
+            sweetAlert({
+                title: 'Oops!',
+                text: 'Er zijn nog niet genoeg spelers in het spel.',
+                type: 'error',
+                confirmButtonColor: '#696969'
+            });
         }
     }
 
     // Function to run when the game overs
-    function roundFinished(player) {
-        if(player == "player1") {
-            pointsP2++;
-            $("#player2 .score h2").text(pointsP2);
+    function playerScores(player) {
+        if(player == "Player 1") {
+            pointsP1++;
+            $(".player1-score").text(pointsP1);
         }
         else {
-            pointsP1++;
-            $("#player1 .score h2").text(pointsP1);
+            pointsP2++;
+            $(".player2-score").text(pointsP2);
         }
-        if(pointsP1 == winPoints) {
-            console.log("player1 wins!");
-            resetGame();
-        }
-        else if(pointsP2 == winPoints) {
-            console.log("player2 wins!");
-            resetGame();
-        }
+
         countdown = 3;
+        paintCanvas();
+        paddle1.draw();
+        paddle2.draw();
         ctx.fillStlye = "white";
         ctx.font = "20px Arial, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
+        ctx.fillText(player + " scores!", canvasWidth/2, canvasHeight/2 );
         ctx.fillText(countdown + "...", canvasWidth/2, canvasHeight/2 + 25 );
+
         var interval = setInterval(function(){
             countdown--;
             paintCanvas();
@@ -363,36 +376,100 @@
             ctx.font = "20px Arial, sans-serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
+            ctx.fillText(player + " scores!", canvasWidth/2, canvasHeight/2 );
             ctx.fillText(countdown + "...", canvasWidth/2, canvasHeight/2 + 25 );
         },1000);
 
         // Stop the Animation
         cancelRequestAnimFrame(init);
 
-        // If the game is over, and the restart button is clicked
-            setTimeout(function(){
-                ball.x = canvasWidth/2;
-                ball.y = canvasHeight/2;
-                //points = 0;
-                ball.vx = 4;
-                ball.vy = 8;
-                animloop();
-                clearInterval(interval);
-            },3000);
+        var timeout =  setTimeout(function(){
+            ball.x = canvasWidth/2;
+            ball.y = canvasHeight/2;
+            ball.vx = (Math.floor(Math.random() * 6) + 4) * (Math.random() < 0.5 ? -1 : 1);
+            ball.vy = (Math.floor(Math.random() * 10) + 4) * (Math.random() < 0.5 ? -1 : 1);
+            animloop();
+            clearInterval(interval);
+        },3000);
+
+        if(pointsP1 == winPoints) {
+            paintCanvas();
+            Paddles[0].draw();
+            Paddles[1].draw();
+            winBtn.draw("Player 1");
+            winScreen("Player 1");
+            clearTimeout(timeout);
+            clearInterval(interval);
+        }
+        else if(pointsP2 == winPoints) {
+            paintCanvas();
+            Paddles[0].draw();
+            Paddles[1].draw();
+            winBtn.draw("Player 2");
+            winScreen("Player 2");
+            clearTimeout(timeout);
+            clearInterval(interval);
+        }
+    }
+
+    function winScreen(player) {
+        gameEnded = true;
+        winBtn.draw(player);
     }
 
     function resetGame() {
+        ball.x = canvasWidth/2;
+        ball.y = canvasHeight/2;
         pointsP1 = 0;
         pointsP2 = 0;
-        $("#player1 .score h2").text(pointsP1);
-        $("#player2 .score h2").text(pointsP2);
+        $(".player1-score").text(pointsP1);
+        $(".player2-score").text(pointsP2);
+        gameEnded = false;
         startScreen();
     }
 
     var socket = io();
-    socket.on("movePaddle", function(motionData) {
-        console.log(motionData.beta);
-        Paddles[0].y = map(motionData.beta, 0,90,0,canvasHeight-Paddles[0].height);
+    socket.on("y-coord", function(motionData, user) {
+        console.log(motionData);
+        if(user === players[0]) {
+            Paddles[0].y = map(motionData, 0,400,-30,(canvasHeight-Paddles[0].height)*2);
+        } else {
+            Paddles[1].y = map(motionData, 0,400,-30,(canvasHeight-Paddles[0].height)*2);
+        }
+    });
+
+    var socket = io();
+    socket.on("rotatie", function(motionData, user) {
+        console.log(motionData);
+        if(user === players[0]) {
+            Paddles[0].y = map(motionData, 0,400,-30,(canvasHeight-Paddles[0].height)*2);
+        } else {
+            Paddles[1].y = map(motionData, 0,400,-30,(canvasHeight-Paddles[0].height)*2);
+        }
+    });
+
+    socket.on("username", function(username){
+        if(players.length < 2) {
+            players.push(username);
+            console.log(username);
+        }
+
+    });
+
+    socket.on("disconnect", function(username){
+        if(players.indexOf(username) >= 0){
+            players.splice(players.indexOf(username),1);
+        }
+        cancelRequestAnimFrame(init);
+        console.log(username + " disconnected");
+        ctx.fillStlye = "white";
+        ctx.font = "20px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(username + " disconnected", canvasWidth/2, canvasHeight/4*3 );
+        setTimeout(function(){
+            startScreen();
+        },3000);
     });
 
     function map( x,  in_min,  in_max,  out_min,  out_max){

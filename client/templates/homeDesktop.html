@@ -1,18 +1,25 @@
-<div id="playersInfo">
-    <div id="player1" ng-model="player1">
-        <h2>Player 1</h2>
-        <div class="score">
-            <h2>0</h2>
+<div id="pongGame">
+    <div id="playersInfo">
+        <div class="player1" ng-model="player1">
+            <h2>Player 1 <span id="player1"></span></h2>
+            <div class="score">
+                <!--<h2>0</h2>-->
+            </div>
         </div>
-    </div>
 
-    <div id="player2" ng-model="player2">
-        <h2>Player 2</h2>
         <div class="score">
-            <h2>0</h2>
+            <span class="player1-score">0</span> - <span class="player2-score">0</span>
+        </div>
+
+        <div class="player2" ng-model="player2">
+            <h2><span id="player2"></span> Player 2 </h2>
+            <div class="score">
+                <!--<h2>0</h2>-->
+            </div>
         </div>
     </div>
+    <div ng-include="'/templates/pong.html'"></div>
+    <div id="devices"></div>
+    <p class="maker">Gemaakt door Johan Schimmel & Jeroen Lammen</p>
 </div>
-<div ng-include="'/templates/pong.html'"></div>
 <!--<h1>Desktop template!</h1>-->
-<div id="devices"></div>
